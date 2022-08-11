@@ -5,7 +5,7 @@ import java.util.Arrays;
 public class VaxDisasm implements Disasm {
 
 	private static final int MAXREGSIZE = 16;
-	private static final int MAXMEMSIZE = 65536;
+	private static final int MAXMEMSIZE = 131072;
 	private static final int PC = 15;
 	
 	private int[] reg = new int[MAXREGSIZE];
@@ -118,11 +118,17 @@ public class VaxDisasm implements Disasm {
 	}
 
 	@Override
-	public void load(String path) throws IOException {
+	public void load(String path, boolean binary) throws IOException {
 		byte[] raw = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path));
-		tsize = raw[4] & 0xff | (raw[5] & 0xff) << 8 | (raw[6] & 0xff) << 16 | (raw[7] & 0xff) << 24;
-		dsize = raw[8] & 0xff | (raw[9] & 0xff) << 8 | (raw[10] & 0xff) << 16 | (raw[11] & 0xff) << 24;
-		mem.load(Arrays.copyOfRange(raw, 0x20, raw.length), 0);
+                if (binary) { // assume program
+                    tsize = raw.length;
+                    mem.load(raw, 0);
+                }
+                else {
+                    tsize = raw[4] & 0xff | (raw[5] & 0xff) << 8 | (raw[6] & 0xff) << 16 | (raw[7] & 0xff) << 24;
+                    dsize = raw[8] & 0xff | (raw[9] & 0xff) << 8 | (raw[10] & 0xff) << 16 | (raw[11] & 0xff) << 24;
+                    mem.load(Arrays.copyOfRange(raw, 0x20, raw.length), 0);
+                }
 	}
 	
 	@Override
