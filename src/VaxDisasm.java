@@ -5,13 +5,15 @@ import java.util.Arrays;
 public class VaxDisasm implements Disasm {
 
 	private static final int MAXREGSIZE = 16;
-	private static final int MAXMEMSIZE = 131072;
+//	private static final int MAXMEMSIZE = 131072;
+        private static final int MAXMEMSIZE = 524288;
 	private static final int PC = 15;
 	
 	private int[] reg = new int[MAXREGSIZE];
 	private String[] regLabel = 
 		{"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "ap", "fp", "sp", "pc"};
-	private Memory mem = new Memory(MAXMEMSIZE);
+	private Memory mem;
+        private int startaddr;
 	private int tsize;
 	private int dsize;
 	
@@ -118,22 +120,25 @@ public class VaxDisasm implements Disasm {
 	}
 
 	@Override
-	public void load(String path, boolean binary) throws IOException {
+	public void load(String path, boolean binary, int start) throws IOException {
 		byte[] raw = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path));
+                mem = new Memory(MAXMEMSIZE, start);
+                startaddr = start;
                 if (binary) { // assume program
                     tsize = raw.length;
-                    mem.load(raw, 0);
+                    mem.load(raw, start);
                 }
                 else {
                     tsize = raw[4] & 0xff | (raw[5] & 0xff) << 8 | (raw[6] & 0xff) << 16 | (raw[7] & 0xff) << 24;
                     dsize = raw[8] & 0xff | (raw[9] & 0xff) << 8 | (raw[10] & 0xff) << 16 | (raw[11] & 0xff) << 24;
-                    mem.load(Arrays.copyOfRange(raw, 0x20, raw.length), 0);
+                    mem.load(Arrays.copyOfRange(raw, 0x20, raw.length), start);
                 }
 	}
 	
 	@Override
 	public void disasm() {
-		while(reg[PC] < tsize) {
+                reg[PC] = startaddr;
+		while(reg[PC] < (tsize + startaddr)) {
 			System.out.println(generateOpStr());
 		}
 	}
